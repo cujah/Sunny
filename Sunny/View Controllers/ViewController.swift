@@ -23,14 +23,18 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        networkWeatheManager.onCompletion = { currentWeather in
-            print(currentWeather.cityName)
-        }
         
+        networkWeatheManager.delegate = self
         networkWeatheManager.fetchCurrentWeather(forCity: "London") 
         
         
     }
 }
 
-
+extension ViewController: NetworkWeatherManagerDelegate {
+    func updateViewController(_: NetworkWeatherManager, with currentWeather: CurrentWeather) {
+        
+        print(currentWeather.cityName)
+        
+    }
+}
