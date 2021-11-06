@@ -1,6 +1,7 @@
 
 
 import UIKit
+import CoreLocation
 
 class ViewController: UIViewController {
 
@@ -10,12 +11,19 @@ class ViewController: UIViewController {
     @IBOutlet weak var feelsLikeTemperatureLabel: UILabel!
     
     var networkWeatheManager = NetworkWeatherManager()
+    lazy var locationManager: CLLocationManager = {
+        let lm = CLLocationManager()
+        lm.delegate = self
+        lm.desiredAccuracy = kCLLocationAccuracyKilometer
+        lm.requestWhenInUseAuthorization()
+        return lm
+    }()
     
     @IBAction func searchPressed(_ sender: UIButton) {
         self.presentSearchAlertController(withTitle: "Enter city name",
                                           message: nil,
                                           style: .alert) { [unowned self] city in
-            self.networkWeatheManager.fetchCurrentWeather(forCity: city)
+            self.networkWeatheManager.fetchCurrentWeather(forRequestType: .cityName(city: city))
         }
     }
     
@@ -28,7 +36,9 @@ class ViewController: UIViewController {
             self.updateInterface(weather: currentWeather)
         }
         
-        networkWeatheManager.fetchCurrentWeather(forCity: "London") 
+        if CLLocationManager.locationServicesEnabled() {
+            locationManager.requestLocation()
+        }
         
         
     }
@@ -44,4 +54,18 @@ class ViewController: UIViewController {
     
 }
 
+// MARK: - CLLocationManagerDelegate
 
+extension ViewController: CLLocationManagerDelegate {
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let location = locations.last else { return }
+        let latitude = location.coordinate.latitude
+        let longitude = location.coordinate.longitude
+        
+        networkWeatheManager.fetchCurrentWeather(forRequestType: .coordinate(latitude: latitude, longitude: longitude))
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        print(error.localizedDescription)
+    }
+}
